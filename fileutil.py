@@ -61,9 +61,9 @@ def cache_vals(in_path: str, vals: npt.NDArray[np.float64]) -> None:
     dircheck(cache_hashes)
     dircheck(cache_vals)
     m, n = vals.shape
-    save_hash(in_path, os.path.join(cache_hashes, in_file_name + ".sha256"))
     with lzma.open(os.path.join(cache_vals, in_file_name + f"_{m}x{n}.pkl"), "wb") as file:
         dill.dump(vals, file)
+    save_hash(in_path, os.path.join(cache_hashes, in_file_name + ".sha256"))
 
 
 if __name__ == "__main__":

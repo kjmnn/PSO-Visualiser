@@ -271,7 +271,7 @@ class App:
 
     def _draw(self) -> None:
         """
-        Update particle visualisation & best value display. 
+        Update particle visualisation & best value display.
         """
         for i, part in enumerate(self._sim.particles):
             if i >= len(self._drawn_particles):
@@ -293,7 +293,7 @@ class App:
                 body, int(part.pos[1] - self._particle_offset), int(part.pos[0] - self._particle_offset)
             )
         best_val, (best_y, best_x) = self._sim.best()
-        self._best_label.config(text=f"Best value: {best_val :0.20e}\n at {best_x :0.10e} X, {best_y :0.10e} Y")
+        self._best_label.config(text=f"Best value: {best_val :0.20e}\n at X={best_x :0.10e}, Y={best_y :0.10e}")
 
     def _clear_canvas(self) -> None:
         """
@@ -386,7 +386,7 @@ def main(args: argparse.Namespace) -> None:
         print(f"Could not parse colour: {args.bg_high}, using default.")
         gradient_high = np.array([130, 255, 130], dtype=np.uint8)
     print("Rendering background...")
-    bg = vals_to_image(vals, gradient_low, gradient_high)
+    bg = vals_to_image(vals, gradient_low, gradient_high, args.log_bg)
 
     print("Initialising the simulation...")
     app = App(
@@ -420,12 +420,16 @@ def make_parser() -> argparse.ArgumentParser:
         choices=["image", "pickle"],
         help="type of the input file (inferred from file extension if not set)",
     )
+    parser.add_argument("--sim_size", type=int, help="size of the simulation area", default=800)
     parser.add_argument("--maximise", action="store_true", help="maximise the function instead of minimising it")
     parser.add_argument("--seed", type=int, help="random seed for the simulation", default=int(time.time()))
     parser.add_argument(
-        "--increment_seed", action="store_true", help="increment the seed after each simulation restart"
+        "--no_increment_seed",
+        action="store_false",
+        dest="increment_seed",
+        help="don't increment the seed after each reset",
     )
-    parser.add_argument("--pop", metavar="#N", type=int, help="population size", default=100)
+    parser.add_argument("--pop", metavar="#N", type=int, help="population size", default=16)
     parser.add_argument(
         "--pop_shape", choices=["random", "grid"], help="initial population distribution shape", default="random"
     )
@@ -437,7 +441,6 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--g_coef", type=np.float64, help="global coefficient", default=0.01)
     parser.add_argument("--init_v", type=np.float64, help="initial velocity", default=10)
     parser.add_argument("--tps", type=np.float64, help="ticks per second", default=24)  # cinematic
-    parser.add_argument("--sim_size", type=int, help="size of the simulation area", default=800)
     parser.add_argument("--particle_colour", metavar="#RRGGBB", help="colour of particle circles", default="0x000000")
     parser.add_argument("--particle_radius", metavar="px", type=int, help="radius of particle circles", default=6)
     parser.add_argument(
@@ -445,6 +448,7 @@ def make_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--bg_low", metavar="#RRGGBB", help="low end of the background gradient", default="0x221188")
     parser.add_argument("--bg_high", metavar="#RRGGBB", help="high end of the background gradient", default="0xaaffaa")
+    parser.add_argument("--log_bg", action="store_true", help="use logarithmic scale for the background gradient")
     return parser
 
 

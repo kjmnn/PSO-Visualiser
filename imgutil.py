@@ -67,7 +67,8 @@ def vals_to_image(
     vals: npt.NDArray[np.float64],
     rgb_low: npt.NDArray[np.uint8],
     rgb_high: npt.NDArray[np.uint8],
-):
+    log_scale: bool = False,
+) -> PIL.Image.Image:
     """
     Create a gradient image from precalculated function values.
     """
@@ -81,8 +82,11 @@ def vals_to_image(
     min_val, max_val = vals.min(), vals.max()
     if min_val == max_val:
         vals = np.zeros_like(vals)
+    elif log_scale:
+        vals = np.log1p(vals - min_val) / np.log1p(max_val - min_val)
     else:
         vals = (vals - min_val) / (max_val - min_val)
+
 
     oklab_blend = True
     if oklab_blend:
