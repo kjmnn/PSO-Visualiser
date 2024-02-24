@@ -156,55 +156,46 @@ class App:
 
             return inner
 
-        self._seed_tkvar = tk.StringVar(value=str(self._seed))
+        self._seed_tkvar = self._new_tkvar(str(self._seed), with_min(int, 0), "_seed")
         self._create_input_field(controls_frame, "Seed: ", self._seed_tkvar)
-        self._tkvar_bindings.append((self._seed_tkvar, int, "_seed"))
 
-        increment_seed_tkvar = tk.StringVar(value="1" if self._increment_seed else "0")
+        increment_seed_tkvar = self._new_tkvar(
+            "1" if self._increment_seed else "0", lambda x: x == "1", "_increment_seed"
+        )
         self._create_radio_buttons(
             controls_frame, "Increment seed after restart: ", increment_seed_tkvar, ["Yes", "No"], ["1", "0"]
         )
-        self._tkvar_bindings.append((increment_seed_tkvar, lambda x: x == "1", "_increment_seed"))
 
-        pop_tkvar = tk.StringVar(value=str(self._pop))
+        pop_tkvar = self._new_tkvar(str(self._pop), with_min(int, 1), "_pop")
         self._create_input_field(controls_frame, "Population: ", pop_tkvar)
-        self._tkvar_bindings.append((pop_tkvar, with_min(int, 1), "_pop"))
 
-        pop_shape_tkvar = tk.StringVar(value=self._pop_shape)
+        pop_shape_tkvar = self._new_tkvar(self._pop_shape, str, "_pop_shape")
         self._create_radio_buttons(
             controls_frame, "Population shape: ", pop_shape_tkvar, ["Random", "Grid"], ["random", "grid"]
         )
-        self._tkvar_bindings.append((pop_shape_tkvar, str, "_pop_shape"))
 
-        maximise_tkvar = tk.StringVar(value="1" if self._maximise else "0")
+        maximise_tkvar = self._new_tkvar("1" if self._maximise else "0", lambda x: x == "1", "_maximise")
         self._create_radio_buttons(
             controls_frame, "Optimisation mode: ", maximise_tkvar, ["Minimise", "Maximise"], ["0", "1"]
         )
-        self._tkvar_bindings.append((maximise_tkvar, lambda x: x == "1", "_maximise"))
 
-        inertia_tkvar = tk.StringVar(value=str(self._inertia))
+        inertia_tkvar = self._new_tkvar(str(self._inertia), np.float64, "_inertia")
         self._create_input_field(controls_frame, "Inertia: ", inertia_tkvar)
-        self._tkvar_bindings.append((inertia_tkvar, np.float64, "_inertia"))
 
-        p_coef_tkvar = tk.StringVar(value=str(self._p_coef))
+        p_coef_tkvar = self._new_tkvar(str(self._p_coef), np.float64, "_p_coef")
         self._create_input_field(controls_frame, "Personal coefficient: ", p_coef_tkvar)
-        self._tkvar_bindings.append((p_coef_tkvar, np.float64, "_p_coef"))
 
-        g_coef_tkvar = tk.StringVar(value=str(self._g_coef))
+        g_coef_tkvar = self._new_tkvar(str(self._g_coef), np.float64, "_g_coef")
         self._create_input_field(controls_frame, "Global coefficient: ", g_coef_tkvar)
-        self._tkvar_bindings.append((g_coef_tkvar, np.float64, "_g_coef"))
 
-        init_v_tkvar = tk.StringVar(value=str(self._init_v))
+        init_v_tkvar = self._new_tkvar(str(self._init_v), np.float64, "_init_v")
         self._create_input_field(controls_frame, "Initial velocity: ", init_v_tkvar)
-        self._tkvar_bindings.append((init_v_tkvar, np.float64, "_init_v"))
 
-        tps_tkvar = tk.StringVar(value=str(self._tps))
+        tps_tkvar = self._new_tkvar(str(self._tps), with_min(np.float64, 0), "_tps")
         self._create_input_field(controls_frame, "Ticks per second: ", tps_tkvar)
-        self._tkvar_bindings.append((tps_tkvar, with_min(np.float64, 0), "_tps"))
 
-        spawn_amount_tkvar = tk.StringVar(value=str(self._spawn_amount))
+        spawn_amount_tkvar = self._new_tkvar(str(self._spawn_amount), with_min(int, 0), "_spawn_amount")
         self._create_input_field(controls_frame, "Spawn amount: ", spawn_amount_tkvar)
-        self._tkvar_bindings.append((spawn_amount_tkvar, with_min(int, 0), "_spawn_amount"))
 
         tk.Label(controls_frame, text="Parameters only update on restart.").pack(side=tk.TOP, expand=False, fill=tk.X)
 
@@ -220,6 +211,12 @@ class App:
             canvas_frame.winfo_width() + controls_frame.winfo_width(),
             max(canvas_frame.winfo_height(), controls_frame.winfo_height()),
         )
+
+    def _new_tkvar(self, value: str, parser: Callable, name: str) -> tk.StringVar:
+        """Create a new tk variable and bind it to a field."""
+        tkvar = tk.StringVar(value=value)
+        self._tkvar_bindings.append((tkvar, parser, name))
+        return tkvar
 
     @staticmethod
     def _create_input_field(parent: tk.Widget, name: str, tkvar: tk.StringVar) -> None:
@@ -347,11 +344,11 @@ def main(args: argparse.Namespace) -> None:
     if not os.path.isfile(args.in_file):
         raise ValueError(f"File {args.in_file} does not exist.")
     if args.input_type is None:
-        suffix = args.in_file.split(".")[-1]
-        match suffix:
-            case "bmp" | "png" | "jpg" | "jpeg" | "tiff" | "tif" | "webp":
+        _, ext = os.path.splitext(args.in_file)
+        match ext:
+            case ".bmp" | ".png" | ".jpg" | ".jpeg" | ".tiff" | ".tif" | ".webp":
                 args.input_type = "image"
-            case "pkl" | "pickle":
+            case ".pkl" | ".pickle":
                 args.input_type = "pickle"
             case _:
                 raise ValueError("Could not infer input type from file extension, please use the --input_type option.")
@@ -367,7 +364,19 @@ def main(args: argparse.Namespace) -> None:
         raise ValueError("Invalid input type.")
 
     if args.sim_size < 1:
+        # The size arg affects too many things to just set it to a default
         raise ValueError("Simulation size must be at least 1.")
+    for arg, default, min in [
+        ("pop", 16, 1),
+        ("particle_radius", 6, 1),
+        ("line_thickness", 2, 1),
+        ("seed", int(time.time()), 0),
+        ("spawn_amount", 1, 0),
+        ("tps", 24, 0),
+    ]:
+        if getattr(args, arg) < min:
+            print(f"Warning: {arg} must be at least {min}, using default ({default}).")
+            setattr(args, arg, default)
 
     vals = try_get_cached_vals(args.in_file, args.sim_size)
     if vals is None:
@@ -454,4 +463,8 @@ def make_parser() -> argparse.ArgumentParser:
 
 if __name__ == "__main__":
     args = make_parser().parse_args()
-    main(args)
+    try:
+        main(args)
+    except ValueError as e:
+        print(f"Error: {e}")
+        exit(1)
