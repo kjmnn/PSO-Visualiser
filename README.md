@@ -16,10 +16,11 @@ It's not really meant for actually optimising functions so don't use it for that
 
 ***The program will create directories & files in the current working directory.***
 
-The simplest way to laun\ch the program is `python app.py INPUT_FILE`. `INPUT_FILE` is the only required argument, a path to an input file. 
-Input files can be either images (any format the Pillow library can read) or `dill`-pickled functions that take the domain size as a parameter and return the actual function mapping coordinates to a real value.
+The simplest way to laun\ch the program is `python visualiser.py INPUT_FILE`. `INPUT_FILE` is the only required argument, a path to an input file. 
+Input files can be either images (any format the Pillow library can read) or `dill`-pickled functions that take the domain size as a parameter and return the actual function mapping coordinates to a real value.  
+*The first time running the program with a new input will take little while to render the background.*
 
-For more options see below or `python app.py -h`.
+For more options see below or `python visualiser.py -h`.
 
 
 ### Command line parameters
@@ -98,7 +99,7 @@ Running `clear_cache.py` simply deletes the whole `.cache` directory..
 
 ## Internals
 
-- `app.py` is the main entrypoint as well as containing the definition of the `App` class.
+- `visualiser.py` is the main entrypoint as well as containing the definition of the `App` class.
 - `pso.py` contains the implementation of the actual PSO algorithm.
 - `fileutil.py` contains utility functions for dealing with caching and saving files.
 - `imgutil.py` contains functions that interpret and create images.
@@ -110,7 +111,7 @@ Now to go over the at least slightly tricky bits:
 #### Inputs
 
 **Image input** works by loading the image using Pillow and converting it to greyscale; function values are then computed by translating coordinates inside the search space into coordinates inside the image, then doing bilinear interpolation (weighted sum of the closest 4 pixels.)  
-**Pickle input** uses `dill` because standard library `pickle` doesn't support pickling functions. It's essentially just glorified source files and modules used in the functions must also be loaded in `app.py`, but it was simpler than trying to figure out some custom way to save and load source code.
+**Pickle input** uses `dill` because standard library `pickle` doesn't support pickling functions. It's essentially just glorified source files and modules used in the functions must also be loaded in `visualiser.py`, but it was simpler than trying to figure out some custom way to save and load source code.
 
 
 #### The tick loop
